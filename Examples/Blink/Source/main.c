@@ -3,26 +3,27 @@
 
 int main()
 {
-	if(map_peripheral(&gpio) == -1) 
+	if (map_peripheral(&gpio) == -1)
 	{
-       	 	printf("Failed to map the physical GPIO registers into the virtual memory space.\n");
-        	return -1;
-    	}
+		printf("Failed to map the physical GPIO registers into the virtual memory space.\n");
+		return -1;
+	}
 
 	// Define gpio 17 as output
 	INP_GPIO(17);
 	OUT_GPIO(17);
 
-	while(1)
+	while (1)
 	{
 		// Toggle 17 (blink a led!)
 		GPIO_SET = 1 << 17;
+		printf("after GPIO_SET= 1 << 17\n");
 		sleep(1);
 
 		GPIO_CLR = 1 << 17;
+		printf("after GPIO_CLR= 1 << 17\n");
 		sleep(1);
 	}
 
-	return 0;	
-
+	return 0;
 }
