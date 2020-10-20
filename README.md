@@ -1,6 +1,1 @@
-To install:
-    - mkdir Build
-    - cd Build
-    - cmake ../
-    - make
-    - sudo make install
+# emb read gpio in C en log to database
