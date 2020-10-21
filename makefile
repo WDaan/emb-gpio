@@ -3,7 +3,6 @@ obj = $(src:.c=.o)
 CFLAGS=`mysql_config --libs`
 
 Build/main: $(obj)
-	@echo "Cleaning up..."
 	$(CC) -o $@ $< $(CFLAGS)
 
 .PHONY: clean
