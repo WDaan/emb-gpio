@@ -3,7 +3,7 @@ obj = $(src:.c=.o)
 CFLAGS=`mysql_config --libs`
 
 Build/main: $(obj)
-	$(CC) -o $@ $< $(CFLAGS)
+	$(CC) -o $@ $^ $(CFLAGS)
 
 .PHONY: clean
 clean:
