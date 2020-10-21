@@ -1,2 +1,2 @@
-Build
-CMakeFiles
+Build/*
+Source/*.o
