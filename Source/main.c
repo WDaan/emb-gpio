@@ -1,4 +1,4 @@
-#include "./PJ_RPI.h"
+#include "PJ_RPI.h"
 #include <stdio.h>
 
 int main()
