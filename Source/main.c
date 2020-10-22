@@ -12,11 +12,21 @@ void finish_with_error(MYSQL *con)
 
 int main()
 {
-    // if (map_peripheral(&gpio) == -1)
-    // {
-    //     printf("Failed to map the physical GPIO registers into the virtual memory space.\n");
-    //     return -1;
-    // }
+    // init gpio's
+    if (map_peripheral(&gpio) == -1)
+    {
+        printf("Failed to map the physical GPIO registers into the virtual memory space.\n");
+        return -1;
+    }
+
+    // connect mysql
+    MYSQL *con = mysql_init(NULL);
+
+    if (mysql_real_connect(con, "localhost", "root", "root",
+                           "emb", 0, NULL, 0) == NULL)
+    {
+        finish_with_error(con);
+    }
 
     // // Define gpio 17 as output
     // INP_GPIO(17);
@@ -34,24 +44,19 @@ int main()
     //     sleep(1);
     // }
 
-    //connect mysql
-    MYSQL *con = mysql_init(NULL);
-
-    if (mysql_real_connect(con, "localhost", "root", "root",
-                           "emb", 0, NULL, 0) == NULL)
-    {
-        finish_with_error(con);
-    }
-
-    int gpio = 17;
+    int pin = 17;
     int status = 0;
+    INP_GPIO(17);
+
+    //led
+    INP_GPIO(4);
+    OUT_GPIO(4);
 
     char operation[50];
 
-    printf("a: set fake input to 1\n");
-    printf("z: set fake input to 0\n");
+    printf("a: read input\n");
+    printf("z: view last status\n");
     printf("s: save input to mysql\n");
-    printf("i: mysql info\n");
     printf("e: exit\n");
 
     while (1)
@@ -64,15 +69,15 @@ int main()
         switch (chr)
         {
         case 'a':
-            status = 1;
-            printf("status is now 1 \n");
+            status = GPIO_READ(pin);
+            GPIO_SET = 1 << 4;
             break;
         case 'z':
-            status = 0;
-            printf("status is now 0 \n");
+            printf("Status of pin%d is: %d \n", pin, status);
+            GPIO_CLR = 1 << 4;
             break;
         case 's':
-            sprintf(operation, "INSERT INTO gpio VALUES(%d, %d, NULL)", gpio, status);
+            sprintf(operation, "INSERT INTO gpio VALUES(%d, %d, NULL)", pin, status);
             printf("Executing operation....\n");
             printf("%s\n", operation);
 
@@ -80,9 +85,6 @@ int main()
             {
                 finish_with_error(con);
             }
-            break;
-        case 'i':
-            printf("MySQL client version: %s\n", mysql_get_client_info());
             break;
         case 'e':
             exit(0);
@@ -92,7 +94,8 @@ int main()
 
         //clear buffer
         int c;
-        while ((c = getchar()) != '\n' && c != EOF);
+        while ((c = getchar()) != '\n' && c != EOF)
+            ;
 
         printf("\n\n\n");
     }
