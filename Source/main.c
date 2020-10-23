@@ -1,4 +1,5 @@
-#include "PJ_RPI.h"
+#include <linux/gpio.h>
+#include <gpiod.h>
 #include <stdio.h>
 #include <string.h>
 #include <mysql/mysql.h>
@@ -12,13 +13,6 @@ void finish_with_error(MYSQL *con)
 
 int main()
 {
-    // init gpio's
-    if (map_peripheral(&gpio) == -1)
-    {
-        printf("Failed to map the physical GPIO registers into the virtual memory space.\n");
-        return -1;
-    }
-
     // connect mysql
     MYSQL *con = mysql_init(NULL);
 
@@ -28,29 +22,12 @@ int main()
         finish_with_error(con);
     }
 
-    // // Define gpio 17 as output
-    // INP_GPIO(17);
-    // OUT_GPIO(17);
-
-    // while (1)
-    // {
-    //     // Toggle 17 (blink a led!)
-    //     GPIO_SET = 1 << 17;
-    //     printf("after GPIO_SET= 1 << 17\n");
-    //     sleep(1);
-
-    //     GPIO_CLR = 1 << 17;
-    //     printf("after GPIO_CLR= 1 << 17\n");
-    //     sleep(1);
-    // }
-
     int pin = 17;
     int status = 0;
-    INP_GPIO(17);
 
-    //led
-    INP_GPIO(4);
-    OUT_GPIO(4);
+    int output_chip = gpiod_chip_open_by_number(0);
+    int output_line = gpiod_chip_get_line(output_chip, 27);
+    gpiod_line_set_value(output_line, 1);
 
     char operation[50];
 
@@ -69,12 +46,11 @@ int main()
         switch (chr)
         {
         case 'a':
-            status = GPIO_READ(pin);
-            GPIO_SET = 1 << 4;
+
             break;
         case 'z':
             printf("Status of pin%d is: %d \n", pin, status);
-            GPIO_CLR = 1 << 4;
+
             break;
         case 's':
             sprintf(operation, "INSERT INTO gpio VALUES(%d, %d, NULL)", pin, status);
