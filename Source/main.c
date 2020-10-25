@@ -28,25 +28,7 @@ int main()
         finish_with_error(con);
     }
 
-    // // Define gpio 17 as output
-    // INP_GPIO(17);
-    // OUT_GPIO(17);
-
-    // while (1)
-    // {
-    //     // Toggle 17 (blink a led!)
-    //     GPIO_SET = 1 << 17;
-    //     printf("after GPIO_SET= 1 << 17\n");
-    //     sleep(1);
-
-    //     GPIO_CLR = 1 << 17;
-    //     printf("after GPIO_CLR= 1 << 17\n");
-    //     sleep(1);
-    // }
-
-    int pin = 17;
     int status = 0;
-    INP_GPIO(17);
 
     //led
     INP_GPIO(4);
@@ -54,42 +36,31 @@ int main()
 
     char operation[50];
 
-    printf("a: read input\n");
-    printf("z: view last status\n");
-    printf("s: save input to mysql\n");
-    printf("e: exit\n");
-
     while (1)
     {
-        printf("Status is %d \n", status);
-        printf("Enter a character: ");
-        char chr;
-        scanf("%c", &chr);
+        printf("Enter pin to read: ");
+        int pin;
+        scanf("%d", &pin);
 
-        switch (chr)
-        {
-        case 'a':
-            status = GPIO_READ(pin);
+        // initialize the input
+        INP_GPIO(pin);
+
+        status = GPIO_READ(pin);
+        status = status ? 1 : 0;
+
+        //set status as output
+        if (status)
             GPIO_SET = 1 << 4;
-            break;
-        case 'z':
-            printf("Status of pin%d is: %d \n", pin, status);
+        else
             GPIO_CLR = 1 << 4;
-            break;
-        case 's':
-            sprintf(operation, "INSERT INTO gpio VALUES(%d, %d, NULL)", pin, status);
-            printf("Executing operation....\n");
-            printf("%s\n", operation);
 
-            if (mysql_query(con, operation))
-            {
-                finish_with_error(con);
-            }
-            break;
-        case 'e':
-            exit(0);
-        default:
-            break;
+        sprintf(operation, "INSERT INTO gpio VALUES(%d, %d, NULL)", pin, status);
+        printf("Executing the folowing query:\n");
+        printf("\t%s\n", operation);
+
+        if (mysql_query(con, operation))
+        {
+            finish_with_error(con);
         }
 
         //clear buffer

@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <assert.h>
 
-#include <sched.h>		// To set the priority on linux
+#include <sched.h> // To set the priority on linux
 
 #include <sys/mman.h>
 #include <sys/types.h>
@@ -17,77 +17,80 @@
 
 #include <unistd.h>
 
-// Define which Raspberry Pi board are you using. Take care to have defined only one at time.
-//#define RPI
-#define RPI2
+// Define which Raspberry Pi board are you using
+#define RPI4
 
 #ifdef RPI
-#define BCM2708_PERI_BASE       0x20000000
-#define GPIO_BASE               (BCM2708_PERI_BASE + 0x200000)	// GPIO controller 
-#define BSC0_BASE 		(BCM2708_PERI_BASE + 0x205000)	// I2C controller	
+#define BCM2708_PERI_BASE 0x20000000
+#define GPIO_BASE (BCM2708_PERI_BASE + 0x200000) // GPIO controller
+#define BSC0_BASE (BCM2708_PERI_BASE + 0x205000) // I2C controller
+#elif defined(RPI2) || defined(RPI3)
+#define BCM2708_PERI_BASE 0x3F000000
+#define GPIO_BASE (BCM2708_PERI_BASE + 0x200000) // GPIO controller. Maybe wrong. Need to be tested.
+#define BSC0_BASE (BCM2708_PERI_BASE + 0x804000) // I2C controller
+#elif defined(RPI4)
+#define BCM2708_PERI_BASE 0xFE000000
+#define GPIO_BASE (BCM2708_PERI_BASE + 0x200000) // GPIO controller. Maybe wrong. Need to be tested.
+#define BSC0_BASE (BCM2708_PERI_BASE + 0x804000) // I2C controller
+#else
+#error "No supported board selected"
 #endif
 
-#ifdef RPI2
-#define BCM2708_PERI_BASE       0x3F000000
-#define GPIO_BASE               (BCM2708_PERI_BASE + 0x200000)	// GPIO controller. Maybe wrong. Need to be tested.
-#define BSC0_BASE 		(BCM2708_PERI_BASE + 0x804000)	// I2C controller	
-#endif	
-
-#define PAGE_SIZE 		(4*1024)
-#define BLOCK_SIZE 		(4*1024)
+#define PAGE_SIZE (4 * 1024)
+#define BLOCK_SIZE (4 * 1024)
 
 // IO Acces
-struct bcm2835_peripheral {
+struct bcm2835_peripheral
+{
     unsigned long addr_p;
     int mem_fd;
     void *map;
     volatile unsigned int *addr;
 };
 
-extern struct bcm2835_peripheral gpio; 	// They have to be found somewhere, but can't be in the header
-extern struct bcm2835_peripheral bsc0;	// so use extern!!
+extern struct bcm2835_peripheral gpio; // They have to be found somewhere, but can't be in the header
+extern struct bcm2835_peripheral bsc0; // so use extern!!
 
 // GPIO setup macros. Always use INP_GPIO(x) before using OUT_GPIO(x) or SET_GPIO_ALT(x,y)
-#define INP_GPIO(g) 	*(gpio.addr + ((g)/10)) &= ~(7<<(((g)%10)*3))
-#define OUT_GPIO(g) 	*(gpio.addr + ((g)/10)) |=  (1<<(((g)%10)*3))
-#define SET_GPIO_ALT(g,a) *(gpio.addr + (((g)/10))) |= (((a)<=3?(a) + 4:(a)==4?3:2)<<(((g)%10)*3))
+#define INP_GPIO(g) *(gpio.addr + ((g) / 10)) &= ~(7 << (((g) % 10) * 3))
+#define OUT_GPIO(g) *(gpio.addr + ((g) / 10)) |= (1 << (((g) % 10) * 3))
+#define SET_GPIO_ALT(g, a) *(gpio.addr + (((g) / 10))) |= (((a) <= 3 ? (a) + 4 : (a) == 4 ? 3 : 2) << (((g) % 10) * 3))
 
-#define GPIO_SET 	*(gpio.addr + 7)  // sets   bits which are 1 ignores bits which are 0
-#define GPIO_CLR 	*(gpio.addr + 10) // clears bits which are 1 ignores bits which are 0
+#define GPIO_SET *(gpio.addr + 7)  // sets   bits which are 1 ignores bits which are 0
+#define GPIO_CLR *(gpio.addr + 10) // clears bits which are 1 ignores bits which are 0
 
-#define GPIO_READ(g) 	*(gpio.addr + 13) &= (1<<(g))
+#define GPIO_READ(g) *(gpio.addr + 13) &= (1 << (g))
 
 // I2C macros
-#define BSC0_C        	*(bsc0.addr + 0x00)
-#define BSC0_S        	*(bsc0.addr + 0x01)
-#define BSC0_DLEN    	*(bsc0.addr + 0x02)
-#define BSC0_A        	*(bsc0.addr + 0x03)
-#define BSC0_FIFO    	*(bsc0.addr + 0x04)
+#define BSC0_C *(bsc0.addr + 0x00)
+#define BSC0_S *(bsc0.addr + 0x01)
+#define BSC0_DLEN *(bsc0.addr + 0x02)
+#define BSC0_A *(bsc0.addr + 0x03)
+#define BSC0_FIFO *(bsc0.addr + 0x04)
 
-#define BSC_C_I2CEN    	(1 << 15)
-#define BSC_C_INTR    	(1 << 10)
-#define BSC_C_INTT    	(1 << 9)
-#define BSC_C_INTD    	(1 << 8)
-#define BSC_C_ST    	(1 << 7)
-#define BSC_C_CLEAR    	(1 << 4)
-#define BSC_C_READ    	1
+#define BSC_C_I2CEN (1 << 15)
+#define BSC_C_INTR (1 << 10)
+#define BSC_C_INTT (1 << 9)
+#define BSC_C_INTD (1 << 8)
+#define BSC_C_ST (1 << 7)
+#define BSC_C_CLEAR (1 << 4)
+#define BSC_C_READ 1
 
-#define START_READ    	BSC_C_I2CEN|BSC_C_ST|BSC_C_CLEAR|BSC_C_READ
-#define START_WRITE   	BSC_C_I2CEN|BSC_C_ST
+#define START_READ BSC_C_I2CEN | BSC_C_ST | BSC_C_CLEAR | BSC_C_READ
+#define START_WRITE BSC_C_I2CEN | BSC_C_ST
 
-#define BSC_S_CLKT	(1 << 9)
-#define BSC_S_ERR    	(1 << 8)
-#define BSC_S_RXF    	(1 << 7)
-#define BSC_S_TXE    	(1 << 6)
-#define BSC_S_RXD    	(1 << 5)
-#define BSC_S_TXD    	(1 << 4)
-#define BSC_S_RXR    	(1 << 3)
-#define BSC_S_TXW    	(1 << 2)
-#define BSC_S_DONE   	(1 << 1)
-#define BSC_S_TA    	1
+#define BSC_S_CLKT (1 << 9)
+#define BSC_S_ERR (1 << 8)
+#define BSC_S_RXF (1 << 7)
+#define BSC_S_TXE (1 << 6)
+#define BSC_S_RXD (1 << 5)
+#define BSC_S_TXD (1 << 4)
+#define BSC_S_RXR (1 << 3)
+#define BSC_S_TXW (1 << 2)
+#define BSC_S_DONE (1 << 1)
+#define BSC_S_TA 1
 
-#define CLEAR_STATUS    BSC_S_CLKT|BSC_S_ERR|BSC_S_DONE
-
+#define CLEAR_STATUS BSC_S_CLKT | BSC_S_ERR | BSC_S_DONE
 
 // Function prototypes
 int map_peripheral(struct bcm2835_peripheral *p);
