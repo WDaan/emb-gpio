@@ -1,9 +1,10 @@
 src = $(wildcard Source/*.c)
 obj = $(src:.c=.o)
 CFLAGS=`mysql_config --libs`
+LIBS = -lgpiod 
 
 Build/main: $(obj)
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 .PHONY: clean
 clean:

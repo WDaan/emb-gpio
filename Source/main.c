@@ -1,4 +1,3 @@
-#include <linux/gpio.h>
 #include <gpiod.h>
 #include <stdio.h>
 #include <string.h>
@@ -13,8 +12,12 @@ void finish_with_error(MYSQL *con)
 
 int main()
 {
-    // connect mysql
+    //connect mysql
     MYSQL *con = mysql_init(NULL);
+
+    // init gpiochip
+    struct gpiod_chip *gpiochip = gpiod_chip_open("/dev/gpiochip0");
+    struct gpiod_line *gpioline;
 
     if (mysql_real_connect(con, "localhost", "root", "root",
                            "emb", 0, NULL, 0) == NULL)
@@ -22,50 +25,41 @@ int main()
         finish_with_error(con);
     }
 
-    int pin = 17;
     int status = 0;
 
-    int output_chip = gpiod_chip_open_by_number(0);
-    int output_line = gpiod_chip_get_line(output_chip, 27);
-    gpiod_line_set_value(output_line, 1);
+    // led
+    struct gpiod_line *ledLine = gpiod_chip_get_line(gpiochip, 4);
 
     char operation[50];
 
-    printf("a: read input\n");
-    printf("z: view last status\n");
-    printf("s: save input to mysql\n");
-    printf("e: exit\n");
-
     while (1)
     {
-        printf("Status is %d \n", status);
-        printf("Enter a character: ");
-        char chr;
-        scanf("%c", &chr);
+        printf("Enter pin to read: ");
+        int pin;
+        scanf("%d", &pin);
 
-        switch (chr)
+        // initialize the input
+        gpioline = gpiod_chip_get_line(gpiochip, pin);
+
+        int req = gpiod_line_request_input(gpioline, "gpio_state");
+
+        status = gpiod_line_get_value(gpioline);
+        status = status ? 1 : 0;
+
+        req = gpiod_line_request_output(ledLine, "gpio", 4);
+
+        if (status)
+            gpiod_line_set_value(ledLine, 1);
+        else
+            gpiod_line_set_value(ledLine, 0);
+
+        sprintf(operation, "INSERT INTO gpio VALUES(%d, %d, NULL)", pin, status);
+        printf("Executing the folowing query:\n");
+        printf("\t%s\n", operation);
+
+        if (mysql_query(con, operation))
         {
-        case 'a':
-
-            break;
-        case 'z':
-            printf("Status of pin%d is: %d \n", pin, status);
-
-            break;
-        case 's':
-            sprintf(operation, "INSERT INTO gpio VALUES(%d, %d, NULL)", pin, status);
-            printf("Executing operation....\n");
-            printf("%s\n", operation);
-
-            if (mysql_query(con, operation))
-            {
-                finish_with_error(con);
-            }
-            break;
-        case 'e':
-            exit(0);
-        default:
-            break;
+            finish_with_error(con);
         }
 
         //clear buffer
