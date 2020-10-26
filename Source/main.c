@@ -15,21 +15,21 @@ int main()
     //connect mysql
     MYSQL *con = mysql_init(NULL);
 
-    // init gpiochip
-    struct gpiod_chip *gpiochip = gpiod_chip_open("/dev/gpiochip0");
-    struct gpiod_line *gpioline;
-
     if (mysql_real_connect(con, "localhost", "root", "root",
                            "emb", 0, NULL, 0) == NULL)
     {
         finish_with_error(con);
     }
 
-    int status = 0;
+    // init gpiochip
+    struct gpiod_chip *gpiochip = gpiod_chip_open("/dev/gpiochip0");
+    struct gpiod_line *gpioline;
 
     // led
-    struct gpiod_line *ledLine = gpiod_chip_get_line(gpiochip, 4);
+    int ledPin = 4;
+    struct gpiod_line *ledLine = gpiod_chip_get_line(gpiochip, ledPin);
 
+    int status = 0;
     char operation[50];
 
     while (1)
@@ -46,12 +46,9 @@ int main()
         status = gpiod_line_get_value(gpioline);
         status = status ? 1 : 0;
 
-        req = gpiod_line_request_output(ledLine, "gpio", 4);
+        req = gpiod_line_request_output(ledLine, "gpio", ledPin);
 
-        if (status)
-            gpiod_line_set_value(ledLine, 1);
-        else
-            gpiod_line_set_value(ledLine, 0);
+        gpiod_line_set_value(ledLine, status);
 
         sprintf(operation, "INSERT INTO gpio VALUES(%d, %d, NULL)", pin, status);
         printf("Executing the folowing query:\n");
