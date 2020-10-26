@@ -29,12 +29,12 @@ int main()
     }
 
     int status = 0;
+    char operation[50];
 
     //led
-    INP_GPIO(4);
-    OUT_GPIO(4);
-
-    char operation[50];
+    int ledPin = 4;
+    INP_GPIO(ledPin);
+    OUT_GPIO(ledPin);
 
     while (1)
     {
@@ -50,9 +50,9 @@ int main()
 
         //set status as output
         if (status)
-            GPIO_SET = 1 << 4;
+            GPIO_SET = 1 << ledPin;
         else
-            GPIO_CLR = 1 << 4;
+            GPIO_CLR = 1 << ledPin;
 
         sprintf(operation, "INSERT INTO gpio VALUES(%d, %d, NULL)", pin, status);
         printf("Executing the folowing query:\n");
